@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#define M 3
+#define M 10
 #define SC sizeof(char*)
 
 char *input_str(void);
@@ -13,23 +13,24 @@ int main(){
     char **s = calloc(M, SC);
     char *c = input_str();
     int i=0;
+    int k=M;
     if(c!= NULL){
-        int k=M;
         while(c!=NULL){
             if(i>=k-1){
-                s = realloc(s, (k+M)*SC);
                 k+=M;
+                s = realloc(s, k*SC);
             }
             s[i]= c;
             i++;
             c = input_str();
         }
-        sort_str(s, i);
+        s[i]=NULL;
+        sortb_str(s, i);
         printf("\n");
         printf("%s\n", "Отсортированные строки:");
         out_arr_str(s);
     }
-    s[i]=NULL;
+    
     free_arr_str(s);
     free(s);
 }
