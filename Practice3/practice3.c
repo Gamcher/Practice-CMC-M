@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#define M 10
+#define M 30
 struct listWord{
     char *s;
     struct listWord* lw;
@@ -38,23 +38,31 @@ int main(){
     inputBtDict(&t);
     int k = 0; //число, которое будет считать количество всего слов
     strToCountInBtrc(&t, &nt, &k);
-    outDictOfBtrc(&nt, k);
     freeBtrf(t);
+    outDictOfBtrc(&nt, k);  
     freeBtrc(nt);
     return 0;
 }
+
 //Функция считывания с входного потока слова в бинарное дерево поиска ключом служит слово
 void inputBtDict(btrf** t){
     char *word;
+    int count =0;
+    int count2 = 0;
     while ((word = inpWord()) != NULL){
-        if(isspace(word[0])){
+        count++;
+        if((!ispunct(word[0])) && (!isalpha(word[0]))){
             free(word);
             continue;
         }
-        if(word[0] == 0) break;
-        strInBtrf(t, word);
+        if (word[0] == 0) {
+            free(word);
+            break;
+        }
+        strInBtrf(t, word); count2++;
         free(word);
     }
+    printf("%d  %d/n", count, count2);
 }
 
 //Функция, добавляющая слово в бинарное дерево поиска. Если слово есть: увеличивает количество вхождений 
@@ -83,7 +91,7 @@ char* inpWord(){
         free(str);
         return NULL;
     }
-    if(ispunct(c) || isspace(c)){
+    if(!isalpha(c)){
         str[0] = c;
         str[1] = '\0';
         return str;
