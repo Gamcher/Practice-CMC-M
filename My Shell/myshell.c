@@ -1,135 +1,191 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
-#define dmetasym ">> && || | > < ; &"
-#define ometasym "|><;&()"
-#define N 30
-#define M 30
-int c, cQoute1, cQoute2;
-char * read_word(char***, int*, int*, int*, FILE *);
+
+#define SIZE_ARR 10
+#define SIZE_WORD 10
+char * metaArr = "|><;&()"; //массив метасимволов
+
+char ** readStr(int *, int *, FILE *);
+void freeStr(char **);
+void printArr(char **);
 
 int main(int argc, char ** argv){
-    FILE *in;
+    //работа с файлом для ввода
+    FILE *i;
     if (argc > 1)
-        in = fopen(argv[1], "r");
-    else  in = stdin;
-    c = getc(in);
+        i = fopen(argv[1], "r");
+    else  i = stdin;
+    //работа со строками
+    int c = getc(i);
     while(c != EOF){
-        char * word; 
-        char ** arr = calloc(M, sizeof(char *)); 
-        int sizeArr = M, i = -1;
-        while ((c != '\n')&&(c != EOF)){
-            int wasMeta = 0;
-            word = read_word(&arr, &sizeArr, &i, &wasMeta, in);
-            if(word != NULL){
-                if (wasMeta == 0){
-                    i++;
-                    if (i >= sizeArr){
-                        arr = (char**) realloc(arr, (sizeArr + M) * sizeof(char*));
-                        sizeArr += M;
-                    } 
-                    arr[i] = word;
-                }
-                else {
-                    arr[i] = word; 
-                    i++;
-                }
-            }
+        int errorStr = 0; //ошибки помогают понять, есть ли проблемы с кавычками
+        char ** arrWords = readStr(&c, &errorStr, i); //считывание построчно
+        if(arrWords != NULL){
+            //вывод слов строки
+            printArr(arrWords);
+            freeStr(arrWords);//функция освобождения памяти
+            free(arrWords); 
         }
-        if ((cQoute1 == 0)&&(cQoute2 == 0)) for (int j = 0; j <= i; j++) printf("%s\n", arr[j]);   
-        for (int j = 0; j <= i; j++) free(arr[j]);
-        free(arr);
+        else
+            if(errorStr != 0) fprintf(stderr, "Есть неправильное количество кавычек\n");
         if(c == EOF) break;
-        c = getc(in);
+        else c = getc(i);
     }
-    fclose(in);
-    return 0;
+    fclose(i);
 }
 
-char * read_word(char *** arrWords, int *sizeArr, int* index, int* wasMetaS, FILE *in){
-    cQoute1 = cQoute2= 0;
-    char * word = (char*) calloc(N+1, sizeof(char));
-    int i = -1, sizeWord = N;
-    char * metaArr = ometasym;
-    
-    while((c != EOF)&&(c != '\n')){
-        if(c == '\''){
+char ** readStr(int *c, int *errorStr, FILE *i){ //возвращает готовый массив слов
+    char ** arr = (char **) malloc(SIZE_ARR * sizeof(char *)); 
+    int sizeArr = SIZE_ARR, indexStr = 0;
+    arr[0] = NULL;
+    int cQoute1 = 0; int cQoute2= 0;
+    char * word = NULL; //записываем слово только, когда символ есть для него
+    int indexW = 0; 
+    int sizeWord = 0;
+    char * metaWord = NULL; //это метаслово
+    int sizeMetaWord = 0;
+    int mc;
+    int wasMeta = 0;
+    while(((cQoute1+cQoute2 > 0)||(*c != '\n'))&&(*c != EOF)){ //чтение строки до EOF или перехода на след. строку
+        //printf("Символы ---> %c\n", *c);
+        if(*c == '\''){
             if(cQoute1 == 1) cQoute1--;
             else cQoute1++;
-            c = getc(in);
+            *c = getc(i);
             continue;
         }
-        if(c == '\"'){
+        if(*c == '\"'){
             if(cQoute2 == 1) cQoute2--;
             else cQoute2++;
-            c = getc(in);
+            *c = getc(i);
             continue;
         }
-        if((c == '\n')||((c == ' ')&&(cQoute1 == 0)&&(cQoute2 == 0))) {
-            if(word[0] != 0){
-                break;
-            }
-            c = getc(in);
-            continue;
-        }
-        int wasMeta = 0;
-        char mc;
-        
-        if ((cQoute1 == 0)&&(cQoute2 == 0))
-            for (int k=0; k<7; k++)
-                if(c == metaArr[k]){
-                    char * metaWord = calloc(3, sizeof(char));
-                    wasMeta++;
-                    metaWord[0] = c;
-                    if((c == '>')||(c == '|')||(c == '&')){
-                        mc = getc(in);
-                        wasMeta++;
-                        if(c == mc){
-                            wasMeta++;
-                            metaWord[1] = c;
-                        } 
-                    }   
-                    //здесь уже есть созданный metaWord
-                    (*index)++;
-                    if (i >= (*sizeArr -1)){
-                        *arrWords = (char**) realloc(*arrWords, ((*sizeArr) + M) * sizeof(char*));
-                        (*sizeArr) += M;
-                    } 
-                    if(word[0] != 0){
-                        (*arrWords)[(*index)+1] = metaWord;
-                        (*wasMetaS)++;
-                    }
-                    else{
-                        (*arrWords)[(*index)] = metaWord;
-                    }
-                    break;
+        if((*c == ' ')&&(cQoute1+cQoute2 == 0)){ //заходим пробел, но без кавычек
+            //printf("Я сюда зашел\n");
+            if(word != NULL){ //если не равен нулю, то добавляем слово
+                if(indexStr == sizeArr-1){ //отслеживаем, чтобы хватало на NULL и слово
+                    sizeArr += SIZE_ARR;
+                    arr = (char **) realloc(arr, sizeArr * sizeof(char *));
                 }
-        if(wasMeta == 0){
-            i++;
-            if(i >= sizeWord){
-                word = (char*) realloc(word, (sizeWord+N) * sizeof(char));
-                sizeWord += N;
+                word[indexW] = 0;
+                arr[indexStr] = word;
+                indexStr++;
+                arr[indexStr] = NULL;
+                word = NULL; //возвращаем в начальное состояние слово
+                indexW = 0;
+                sizeWord = 0; 
             }
-            word[i] = c; 
-            c = getc(in);
+            *c = getc(i);
+            continue;
         }
-        else {
-            if (wasMeta == 2) c = mc;
-            else c = getc(in); 
-            break;
+        else{ //символ не кавычки, не пробел(без режима кавычек, также не пропуск)
+            if ((cQoute1 == 0)&&(cQoute2 == 0)){ //проверка есть ли у нас правило кавычек
+                for (int k=0; k<7; k++){ //пробегаемся по массиву метасимволов (проверка метасимвол или нет)
+                    if(*c == metaArr[k]){
+                        if(word != NULL){
+                            if(indexStr == sizeArr-1){ //отслеживаем, чтобы хватало на NULL и слово, и метаслово
+                                sizeArr += SIZE_ARR;
+                                arr = (char **) realloc(arr, sizeArr * sizeof(char *));
+                            }
+                            word[indexW] = 0;
+                            arr[indexStr] = word;
+                            indexStr++;
+                            arr[indexStr] = NULL;
+                            word = NULL; //возвращаем в начальное состояние слово
+                            indexW = 0;
+                            sizeWord = 0;  
+                        }
+                        sizeMetaWord = 2;
+                        metaWord = (char *) malloc(sizeMetaWord * sizeof(char)); //создаем метаслово
+                        metaWord[0] = *c;
+                        if((*c == '>')||(*c == '|')||(*c == '&')){
+                            wasMeta = 1;
+                            mc = getc(i);
+                            if(*c == mc){
+                                sizeMetaWord++;
+                                metaWord = (char*) realloc(metaWord, sizeMetaWord * sizeof(char));
+                                metaWord[1] = *c;
+                                metaWord[2] = '\0';
+                            } else metaWord[1] = '\0';
+                        }else metaWord[1] = '\0';
+                        //printf("Это метаслово ---> %s\n", metaWord);
+                        //в этот момент слово уже создано
+                        if(indexStr == sizeArr-1){ //отслеживаем, чтобы хватало на NULL и слово, и метаслово
+                            sizeArr += SIZE_ARR;
+                            arr = (char **) realloc(arr, sizeArr * sizeof(char *));
+                        }
+                        arr[indexStr] = metaWord;
+                        indexStr++;
+                        arr[indexStr] = NULL;
+                        break;
+                    }
+                }
+            }
+            if(metaWord == NULL){ //выполняется, если с не метасимвол и так далее (то есть обычный, либо в режиме кавычек)
+                if(sizeWord == 0){ //создаем слово
+                    //printf("Я создал слово\n");
+                    word = (char *) malloc(SIZE_WORD * sizeof(char));
+                    sizeWord = SIZE_WORD;
+                }
+                else 
+                    if(indexW == sizeWord-1){ //увеличиваем размер слова, если не хватит, чтобы вместить символ
+                        sizeWord += SIZE_WORD;
+                        word = (char *) realloc(word, sizeWord * sizeof(char));
+                    }
+                word[indexW] = *c;
+                indexW++;
+                *c = getc(i);
+            }
+            else{
+                if (wasMeta == 1){
+                    wasMeta = 0;
+                    *c = mc;
+                }
+                else *c = getc(i); 
+                metaWord = NULL; //возвращаем в начальное состояние метаслово
+                sizeMetaWord = 0;
+            }
         }
     }
-    if ((cQoute1 == 1)||(cQoute2 == 1)){
-        fprintf(stderr, "Есть неправильное количество кавычек\n");
-        free(word);
-        return NULL;
+    //printf("Я снаружи\n");
+    if(cQoute1+cQoute2>0){
+         *errorStr += 1;
+         if(word != NULL) free(word);
+         freeStr(arr);
+         free(arr);
+         return NULL;
     }
-    if(i == -1){
-        free(word);
-        return NULL;
-    } 
-    word[i+1] = '\0';
-    return word;
+    if((*c == '\n')||(*c == EOF)){
+        if(word != NULL){ //если не равен нулю, то добавляем слово
+            if(indexStr == sizeArr-1){ //отслеживаем, чтобы хватало на NULL и слово
+                sizeArr += SIZE_ARR;
+                arr = (char **) realloc(arr, sizeArr * sizeof(char *));
+            }
+            //if (*arr == NULL) printf("ну ты лох\n");
+            word[indexW] = '\0';
+            arr[indexStr] = word;
+            indexStr++;
+            arr[indexStr] = NULL; 
+        }
+        return arr;
+    }
+    freeStr(arr);
+    free(arr);
+    return NULL;
 }
 
+
+//Функция освобождает память (в конце массиво NULL, это обязательно)
+void freeStr(char ** arrWords){
+    while(*arrWords != NULL){
+        free(*arrWords);
+        arrWords++;
+    }
+}
+void printArr(char ** arrWords){
+    while(*arrWords != NULL){
+                printf("%s\n", *arrWords);
+                arrWords++;
+    }
+}
