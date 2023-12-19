@@ -1,0 +1,24 @@
+ff.txt
+fon
+fon.c
+f.txt
+input
+input.c
+myshell
+myshell2
+myshell2.c
+myshell3
+myshell3.c
+myshell.c
+newshell
+newshell.c
+output
+output.c
+test1.txt
+test.txt
+te.txt
+    PID TTY          TIME CMD
+   8276 pts/0    00:00:00 bash
+  10367 pts/0    00:00:00 myshell
+  10417 pts/0    00:00:00 myshell
+  10418 pts/0    00:00:00 ps
