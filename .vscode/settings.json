@@ -5,6 +5,7 @@
         "stdio.h": "c",
         "string.h": "c",
         "ctype.h": "c",
-        "ipc.h": "c"
+        "ipc.h": "c",
+        "iostream": "cpp"
     }
 }
