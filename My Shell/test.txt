@@ -1,0 +1,17 @@
+ff.txt
+fon
+fon.c
+f.txt
+input
+input.c
+myshell
+myshell2
+myshell2.c
+myshell3
+myshell3.c
+myshell.c
+newshell
+newshell.c
+output
+output.c
+test.txt

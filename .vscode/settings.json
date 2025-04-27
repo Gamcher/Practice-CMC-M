@@ -1,0 +1,11 @@
+{
+    "files.associations": {
+        "matrix_my.h": "c",
+        "stdlib.h": "c",
+        "stdio.h": "c",
+        "string.h": "c",
+        "ctype.h": "c",
+        "ipc.h": "c",
+        "iostream": "cpp"
+    }
+}
